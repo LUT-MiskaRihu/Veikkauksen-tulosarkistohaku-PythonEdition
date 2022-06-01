@@ -1,3 +1,9 @@
+# Veikkaus Results Archive Search and Analyze Tool
+#
+# Author:   Miska Rihu
+# Github:   https://github.com/LUT-MiskaRihu/
+# License:  
+# Modified: 
 import requests
 import json
 import sys
@@ -28,9 +34,12 @@ class ENTRY:
 
 def mainMenu():
     min = 0
-    max = 1
+    max = 4
 
-    print("1) Hae vanhat lottotulokset.")
+    print("1) Hae lottotulokset internetistä")
+    print("2) Hae lottotulokset tiedostosta")
+    print("3) Analysoi tulokset")
+    print("4) Tallenna ")
     print("0) Lopeta")
 
     while (True):
@@ -77,6 +86,10 @@ def extractResults(json_data):
     return entry
 
 
+def clearLine():
+    print(79*' ', end='\r')
+
+
 def getFilenameFromUser():
     return mpl.askForString("Enter a filename (without the extension)").upper()
 
@@ -84,7 +97,7 @@ def getFilenameFromUser():
 def writeFile(filename, entries):
     #filename = "tulokset-" + ".CSV"
     
-    mrp.pinfo("Writing results to a file")
+    mrp.pinfo("Writing results to a file '{file}'".format(file=filename))
     try:
         with open(filename, "w", encoding="utf-8") as file:
             # Write headers.
@@ -92,7 +105,7 @@ def writeFile(filename, entries):
                 CSV_LINE.format(
                     date="Arvontapäivä",
                     primary="Päänumerot",
-                    secondary="Sivunomerot"
+                    secondary="Sivunumerot"
                 )
             )
             file.write('\n')
@@ -113,41 +126,109 @@ def writeFile(filename, entries):
                 file.write(line + '\n')
 
     except FileNotFoundError as e:
-        mrp.perror("Failed to write the file")
-        mrp.perror(mrm.ERR_FILE_NOT_FOUND[lang].format(filename))
+        mrp.perror("Failed to write the file '{file}'".format(file=filename))
         sys.exit(1)
     
-    mrp.pinfo("Finished writing the file.")
+    mrp.pinfo("Finished writing the file '{file}'".format(file=filename))
 
 
-def getResults():
-    year_min = mpl.askForInteger("Haun alaraja (vuosi)")
-    year_max = mpl.askForInteger("Haun yläraja (vuosi)")
+def getResultsOnline(save_each_year_separately):
+    total_progress = 0
+    all_entries = []
+    year_min = mpl.askForInteger("Upper limit (year)")
+    year_max = mpl.askForInteger("Lower limit (year)")
+    count_years = year_max - year_min + 1
+    count_weeks = 52
+    count_total_entries = count_years * count_weeks
 
     for y in range(year_min, year_max+1):
-        mrp.pinfo("Started fetching data for year {0}".format(y))
         entries = []
+        yearly_progress = 0
+        mrp.pinfo("Started fetching data for year {0}".format(y))
+
         for w in range(week_min, week_max+1):
             url = makeURL(y, w)
             data = parseJSON(url)
             entry = extractResults(data)
             entries.append(entry)
-            #mrp.pinfo("Fetched data from {0}".format(url))
-            print(y, w, end="\r")
-        filename = "tulokset-{year}.csv".format(year=y)
-        writeFile(filename, entries)
+            yearly_progress += 1
+            total_progress +=1
+            print(
+                "Yearly progress: {yearly:3.2f} %"  \
+                " | "                               \
+                "Total progress: {total:3.2f} %"    \
+                .format(
+                    yearly=yearly_progress/count_weeks*100,
+                    total=total_progress/count_total_entries*100
+                ),
+                end='\r'
+            )
+        
+        all_entries.append(entries)
+        clearLine()
+
+        if (save_each_year_separately):
+            filename = "results-{year}.csv".format(year=y)
+            writeFile(filename, entries)
+    
+    mrp.pinfo("Finished fetching data")
+    return all_entries
+
+
+def getResultsOffline():
+    mrp.perror("This feature is not implemented yet")
+    return []
+
+
+def analyzeResults(entries):
+    mrp.perror("This feature is not implemented yet")
+    return []
+
+
+def saveResults():
+    mrp.perror("This feature is not implemented yet")
+    return []
 
 
 def main():
+    entries = []
+    analysis = []
+
     while (True):
         selection = mainMenu()
 
         if (selection == 0):
             print(mrm.INFO_QUIT[lang])
             break
+
         elif (selection == 1):
-            getResults()
+            while (True):
+                separate_files = input("Save each year to a separate file? (y/n): ").lower()
+                if (separate_files == "y"):
+                    separate_files = True
+                    break
+                elif (separate_files == "n"):
+                    separate_files = False
+                    break
+                else:
+                    print(mrm.ERR_UNKNOWN_SELECTION[lang])
+            entries = getResultsOnline(separate_files)
         
+        elif (selection == 2):
+            entries = getResultsOffline()
+        
+        elif (selection == 3):
+            if (len(entries) < 1):
+                print("No entries found, run the search first.")
+                entries = getResultsOnline()
+            analysis = analyzeResults(entries)
+        
+        elif (selection == 4):
+            if (len(analysis) < 1):
+                mrp.perror("Analysis must be done first")
+            else:
+                saveResults()
+
         print()
         print()
 
