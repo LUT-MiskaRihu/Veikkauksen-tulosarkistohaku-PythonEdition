@@ -224,12 +224,12 @@ def analyzeResults(entries):
     print(csv_string, end="")
 
     print()
-    print("The mode of the primary numbers was {num} ({percent} %).".format(
+    print("The mode of the primary numbers was {num} ({percent:.2f} %).".format(
             num=p_mode,
             percent=p_mode_percent
         )
     )
-    print("The mode of the secondary numbers was {num} ({percent} %).".format(
+    print("The mode of the secondary numbers was {num} ({percent:.2f} %).".format(
             num=s_mode,
             percent=s_mode_percent
         )
@@ -241,6 +241,22 @@ def analyzeResults(entries):
 def saveResults():
     mrp.perror("This feature is not implemented yet")
     return []
+
+
+def askForSaveMethod():
+    separate_files = input("Save each year to a separate file? (y/n): ").lower()
+
+    while (True):
+        if (separate_files == "y"):
+            separate_files = True
+            break
+        elif (separate_files == "n"):
+            separate_files = False
+            break
+        else:
+            print(mrm.ERR_UNKNOWN_SELECTION[lang])
+
+    return separate_files
 
 
 def main():
@@ -255,16 +271,7 @@ def main():
             break
 
         elif (selection == 1):
-            while (True):
-                separate_files = input("Save each year to a separate file? (y/n): ").lower()
-                if (separate_files == "y"):
-                    separate_files = True
-                    break
-                elif (separate_files == "n"):
-                    separate_files = False
-                    break
-                else:
-                    print(mrm.ERR_UNKNOWN_SELECTION[lang])
+            separate_files = askForSaveMethod()            
             entries = getResultsOnline(separate_files)
         
         elif (selection == 2):
@@ -273,7 +280,8 @@ def main():
         elif (selection == 3):
             if (len(entries) < 1):
                 print("No entries found, run the search first.")
-                entries = getResultsOnline()
+                separate_files = askForSaveMethod()
+                entries = getResultsOnline(separate_files)
             analysis = analyzeResults(entries)
         
         elif (selection == 4):
