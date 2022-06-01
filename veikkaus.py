@@ -8,6 +8,7 @@ import requests
 import json
 import sys
 import datetime
+import statistics
 import mrprintlib as mrp
 import mrmsglib as mrm
 import mrpromptlib as mpl
@@ -105,7 +106,7 @@ def writeFile(filename, entries):
                 CSV_LINE.format(
                     date="Arvontapäivä",
                     primary="Päänumerot",
-                    secondary="Sivunumerot"
+                    secondary="Lisänumerot"
                 )
             )
             file.write('\n')
@@ -120,8 +121,8 @@ def writeFile(filename, entries):
                 #date = str(entry.timestamp)
                 line = CSV_LINE.format(
                     date=date,
-                    primary=str(entry.primary).replace("'", ""),
-                    secondary=str(entry.secondary).replace("'", "")
+                    primary=entry.primary,
+                    secondary=entry.secondary
                 )
                 file.write(line + '\n')
 
@@ -164,7 +165,7 @@ def getResultsOnline(save_each_year_separately):
                 end='\r'
             )
         
-        all_entries.append(entries)
+        all_entries.extend(entries)
         clearLine()
 
         if (save_each_year_separately):
@@ -181,8 +182,60 @@ def getResultsOffline():
 
 
 def analyzeResults(entries):
-    mrp.perror("This feature is not implemented yet")
-    return []
+    primary_counts = []
+    secondary_counts = []
+    p_total = 0
+    s_total = 0
+    p_mode = 0
+    s_mode = 0
+    p_mode_percent = 0
+    s_mode_percent = 0
+
+    for entry in entries:
+        primary_counts.extend(entry.primary)
+        secondary_counts.extend(entry.secondary)
+
+    
+    csv_string = "Nro;Päänumerona (kpl);Lisänumerona (kpl);Päänumerona (%);Lisänumerona (kpl)\n"
+    for i in range(47):
+        number = i + 1
+        p_count = primary_counts.count(number)
+        p_total = len(primary_counts)
+        p_percent = p_count / p_total * 100
+        s_count = secondary_counts.count(number)
+        s_total = len(secondary_counts)
+        s_percent = s_count / s_total * 100
+        line = "{num};{p_count};{s_count};{p_percent:.2f};{s_percent:.2f}\n"
+        line = line.format(
+            num=number,
+            p_count=p_count,
+            s_count=s_count,
+            p_percent=p_percent,
+            s_percent=s_percent
+        )
+        csv_string += line
+
+    p_mode = statistics.mode(primary_counts)
+    s_mode = statistics.mode(secondary_counts)
+    p_mode_percent = primary_counts.count(p_mode) / p_total * 100
+    s_mode_percent = secondary_counts.count(s_mode) / s_total * 100
+
+    print()
+    print(csv_string, end="")
+
+    print()
+    print("The mode of the primary numbers was {num} ({percent} %).".format(
+            num=p_mode,
+            percent=p_mode_percent
+        )
+    )
+    print("The mode of the secondary numbers was {num} ({percent} %).".format(
+            num=s_mode,
+            percent=s_mode_percent
+        )
+    )
+
+    return csv_string
 
 
 def saveResults():
@@ -192,7 +245,7 @@ def saveResults():
 
 def main():
     entries = []
-    analysis = []
+    analysis = ""
 
     while (True):
         selection = mainMenu()
