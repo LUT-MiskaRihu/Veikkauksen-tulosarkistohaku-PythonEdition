@@ -136,8 +136,8 @@ def writeFile(filename, entries):
 def getResultsOnline(save_each_year_separately):
     total_progress = 0
     all_entries = []
-    year_min = mpl.askForInteger("Upper limit (year)")
-    year_max = mpl.askForInteger("Lower limit (year)")
+    year_min = mpl.askForInteger("Lower limit (year)")
+    year_max = mpl.askForInteger("Upper limit (year)")
     count_years = year_max - year_min + 1
     count_weeks = 52
     count_total_entries = count_years * count_weeks
@@ -182,6 +182,7 @@ def getResultsOffline():
 
 
 def analyzeResults(entries):
+    line = "{num};{p_count};{s_count};{p_percent:.2f};{s_percent:.2f}\n"
     primary_counts = []
     secondary_counts = []
     p_total = 0
@@ -195,33 +196,29 @@ def analyzeResults(entries):
         primary_counts.extend(entry.primary)
         secondary_counts.extend(entry.secondary)
 
+    p_total = len(primary_counts)
+    s_total = len(secondary_counts)
     
     csv_string = "Nro;Päänumerona (kpl);Lisänumerona (kpl);Päänumerona (%);Lisänumerona (kpl)\n"
     for i in range(47):
-        number = i + 1
+        number = str(i + 1)
         p_count = primary_counts.count(number)
-        p_total = len(primary_counts)
         p_percent = p_count / p_total * 100
         s_count = secondary_counts.count(number)
-        s_total = len(secondary_counts)
         s_percent = s_count / s_total * 100
-        line = "{num};{p_count};{s_count};{p_percent:.2f};{s_percent:.2f}\n"
-        line = line.format(
+        
+        csv_string += line.format(
             num=number,
             p_count=p_count,
             s_count=s_count,
             p_percent=p_percent,
             s_percent=s_percent
         )
-        csv_string += line
 
-    p_mode = statistics.mode(primary_counts)
-    s_mode = statistics.mode(secondary_counts)
+    p_mode = statistics.multimode(primary_counts)
+    s_mode = statistics.multimode(secondary_counts)
     p_mode_percent = primary_counts.count(p_mode) / p_total * 100
     s_mode_percent = secondary_counts.count(s_mode) / s_total * 100
-
-    print()
-    print(csv_string, end="")
 
     print()
     print("The mode of the primary numbers was {num} ({percent:.2f} %).".format(
